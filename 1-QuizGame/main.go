@@ -1,7 +1,8 @@
 package main
 
-// Part 1 https://courses.calhoun.io/lessons/les_goph_01
-// User must be able to specify file path using a flag in the terminal command
+// https://courses.calhoun.io/lessons/les_goph_01
+// Part 1 - User must be able to specify file path using a flag in the terminal command
+// Part 2 - A timer must run from the start and stop after X amount of time.
 
 import (
 	"encoding/csv"
