@@ -8,42 +8,52 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"strings"
 	"time"
 )
 
-var filePath string
+var flagFilePath string
+var flagTimer uint
+var flagRandomize bool
 
 // Is run before Main
 func init() {
-	flag.StringVar(&filePath, "f", "", "Path to the CSV file.")
+	flag.StringVar(&flagFilePath, "f", "", "Path to the CSV file.")
+	flag.UintVar(&flagTimer, "t", 30, "Time in seconds for quiz.")
+	flag.BoolVar(&flagRandomize, "r", false, "Randomize the question order.")
 }
 
 func main() {
+
 	flag.Parse()
+	handleFlagFilePath()
+	handleFlagTimer()
+
+	var questionsAndAnswers []QuizQuestion = readCSV(flagFilePath)
+	questionIndexOrder := handleFlagRandomize(questionsAndAnswers)
+
 	fmt.Println("Welcome to the quiz!!\n===================\n")
-
-	if filePath == "" {
-		filePath = "./problems.csv"
-	}
-	var questionsAndAnswers []QuizQuestion = readCSV(filePath)
-
 	// Start Quiz
 	var userScore int
-	startSequence()
+	printStartSequence()
 
 	for i := range questionsAndAnswers {
-		questionData := questionsAndAnswers[i]
+		questionData := questionsAndAnswers[questionIndexOrder[i]]
 
 		var answer string
 		fmt.Printf("%s = ", questionData.question)
 		fmt.Scanln(&answer)
 
+		// turn all to lower case and trim whitespace
+		answer = strings.ToLower((answer))
+		answer = strings.Trim(answer, " ")
+
 		if answer == questionData.answer {
 			userScore++
 		}
 	}
-
 	fmt.Printf("FINAL SCORE IS: %d out of %d!", userScore, len(questionsAndAnswers))
 }
 
@@ -71,7 +81,7 @@ func readCSV(filePath string) []QuizQuestion {
 	for _, line := range lines {
 		var questionData QuizQuestion
 		questionData.question = line[0]
-		questionData.answer = line[1]
+		questionData.answer = strings.ToLower(strings.Trim(line[1], " "))
 
 		questionSlice = append(questionSlice, questionData)
 
@@ -101,7 +111,40 @@ func readCSV(filePath string) []QuizQuestion {
 	return questionSlice
 }
 
-func startSequence() {
+func handleFlagFilePath() {
+	if flagFilePath == "" {
+		flagFilePath = "./problems.csv"
+	}
+}
+
+func handleFlagTimer() {
+	if flagTimer < 0 {
+		fmt.Println("Timer cannot be a negative number!")
+		flagTimer = 30
+		os.Exit(1)
+	}
+}
+
+func handleFlagRandomize(questions []QuizQuestion) []int {
+	indexes := make([]int, len(questions))
+	for i := range indexes {
+		indexes[i] = i
+	}
+
+	if flagRandomize == true {
+		// Shuffle
+		rand.Shuffle(len(indexes), func(i, j int) { indexes[i], indexes[j] = indexes[j], indexes[i] })
+
+		randomizedIndexes := make([]int, len(questions))
+		for _, ind := range indexes {
+			randomizedIndexes = append(randomizedIndexes, indexes[ind])
+		}
+		return randomizedIndexes
+	}
+	return indexes
+}
+
+func printStartSequence() {
 	fmt.Println("QUIZ STARTING IN")
 	fmt.Println("3...")
 	time.Sleep(time.Second)
