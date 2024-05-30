@@ -132,16 +132,11 @@ func handleFlagRandomize(questions []QuizQuestion) []int {
 		indexes[i] = i
 	}
 
-	if flagRandomize == true {
+	if flagRandomize {
 		// Shuffle
 		rand.Shuffle(len(indexes), func(i, j int) { indexes[i], indexes[j] = indexes[j], indexes[i] })
-
-		randomizedIndexes := make([]int, len(questions))
-		for _, ind := range indexes {
-			randomizedIndexes = append(randomizedIndexes, indexes[ind])
-		}
-		return randomizedIndexes
 	}
+
 	return indexes
 }
 
