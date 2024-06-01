@@ -44,17 +44,21 @@ func main() {
 
 	var userScore int
 	for i := range questionsAndAnswers {
+		questionData := questionsAndAnswers[questionIndexOrder[i]]
+		fmt.Printf("%s = ", questionData.question)
+
+		answerChan := make(chan string)
+		go func() {
+			var answer string
+			fmt.Scanln(&answer)
+			answerChan <- answer
+		}()
+
 		select {
 		case <-timer.C:
 			fmt.Printf("FINAL SCORE IS: %d out of %d!", userScore, len(questionsAndAnswers))
 			return
-		default:
-			questionData := questionsAndAnswers[questionIndexOrder[i]]
-
-			var answer string
-			fmt.Printf("%s = ", questionData.question)
-			fmt.Scanln(&answer)
-
+		case answer := <-answerChan:
 			// turn all to lower case and trim whitespace
 			answer = strings.ToLower((answer))
 			answer = strings.TrimSpace(answer)
@@ -64,8 +68,9 @@ func main() {
 			}
 		}
 	}
-	//fmt.Printf("FINAL SCORE IS: %d out of %d!", userScore, len(questionsAndAnswers))
 }
+
+//fmt.Printf("FINAL SCORE IS: %d out of %d!", userScore, len(questionsAndAnswers))
 
 type QuizQuestion struct {
 	question string
