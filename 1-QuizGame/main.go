@@ -16,13 +16,13 @@ import (
 )
 
 var flagFilePath string
-var flagTimer uint
+var flagTimer int64
 var flagRandomize bool
 
 // Is run before Main
 func init() {
 	flag.StringVar(&flagFilePath, "f", "", "Path to the CSV file.")
-	flag.UintVar(&flagTimer, "t", 30, "Time in seconds for quiz.")
+	flag.Int64Var(&flagTimer, "t", 30, "Time in seconds for quiz.")
 	flag.BoolVar(&flagRandomize, "r", false, "Randomize the question order.")
 }
 
@@ -37,25 +37,34 @@ func main() {
 
 	fmt.Println("Welcome to the quiz!!\n===================\n")
 	// Start Quiz
-	var userScore int
 	printStartSequence()
 
+	// Start Timer
+	timer := time.NewTimer(time.Duration(flagTimer) * time.Second)
+
+	var userScore int
 	for i := range questionsAndAnswers {
-		questionData := questionsAndAnswers[questionIndexOrder[i]]
+		select {
+		case <-timer.C:
+			fmt.Printf("FINAL SCORE IS: %d out of %d!", userScore, len(questionsAndAnswers))
+			return
+		default:
+			questionData := questionsAndAnswers[questionIndexOrder[i]]
 
-		var answer string
-		fmt.Printf("%s = ", questionData.question)
-		fmt.Scanln(&answer)
+			var answer string
+			fmt.Printf("%s = ", questionData.question)
+			fmt.Scanln(&answer)
 
-		// turn all to lower case and trim whitespace
-		answer = strings.ToLower((answer))
-		answer = strings.Trim(answer, " ")
+			// turn all to lower case and trim whitespace
+			answer = strings.ToLower((answer))
+			answer = strings.TrimSpace(answer)
 
-		if answer == questionData.answer {
-			userScore++
+			if answer == questionData.answer {
+				userScore++
+			}
 		}
 	}
-	fmt.Printf("FINAL SCORE IS: %d out of %d!", userScore, len(questionsAndAnswers))
+	//fmt.Printf("FINAL SCORE IS: %d out of %d!", userScore, len(questionsAndAnswers))
 }
 
 type QuizQuestion struct {
@@ -75,16 +84,13 @@ func readCSV(filePath string) []QuizQuestion {
 		log.Fatal("Unable to read lines from CSV file.")
 	}
 
-	//operators := []string{"+", "-", "*", "/"}
-	var questionSlice []QuizQuestion
-
+	questionSlice := make([]QuizQuestion, len(lines))
 	// Get both parts of the CSV line, now separated by a space
-	for _, line := range lines {
-		var questionData QuizQuestion
-		questionData.question = line[0]
-		questionData.answer = strings.ToLower(strings.Trim(line[1], " "))
-
-		questionSlice = append(questionSlice, questionData)
+	for i, line := range lines {
+		questionSlice[i] = QuizQuestion{
+			question: line[0],
+			answer:   strings.ToLower(strings.Trim(line[1], " ")),
+		}
 
 		// Separate the members and find the operator
 		//for _, operator := range operators {
@@ -121,7 +127,6 @@ func handleFlagFilePath() {
 func handleFlagTimer() {
 	if flagTimer < 0 {
 		fmt.Println("Timer cannot be a negative number!")
-		flagTimer = 30
 		os.Exit(1)
 	}
 }
